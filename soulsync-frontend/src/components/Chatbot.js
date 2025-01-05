@@ -5,12 +5,39 @@ const Chatbot = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const { issueId } = useParams(); 
 
+  const [recognition, setRecognition] = useState(null);  // Speech recognition
+
   useEffect(() => {
-    // You can use the issueId to customize the chatbot's behavior or send it to the backend
+    // Initialize speech recognition
+    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+      const SpeechRecognitionAPI =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognitionAPI();
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = true;
+      recognitionInstance.lang = 'en-US';
+      recognitionInstance.onresult = handleSpeechResult;
+      recognitionInstance.onerror = handleSpeechError;
+      setRecognition(recognitionInstance);
+    } else {
+      console.log("Speech Recognition not supported in this browser.");
+    }
+
     console.log("Selected issue:", issueId);
   }, [issueId]);
+
+  const handleSpeechResult = (event) => {
+    const lastIndex = event.results.length - 1;
+    const speech = event.results[lastIndex][0].transcript;
+    setInput(speech);
+  };
+
+  const handleSpeechError = (event) => {
+    console.error("Speech Recognition Error:", event.error);
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -27,7 +54,7 @@ const Chatbot = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           message: input,
-          issue: issueId  // Pass the issue as part of the request body
+          issue: issueId 
         }),
       });
 
@@ -39,14 +66,14 @@ const Chatbot = () => {
       if (data.status === "success") {
         const botMessage = { sender: "bot", text: data.response };
         setMessages((prevMessages) => [...prevMessages, botMessage]);
-        speak(data.response); // Trigger TTS
+        speak(data.response);
       } else {
         const errorMessage = data.error || "Sorry, something went wrong.";
         setMessages((prevMessages) => [
           ...prevMessages,
           { sender: "bot", text: errorMessage },
         ]);
-        speak(errorMessage); // Trigger TTS
+        speak(errorMessage);
       }
     } catch (error) {
       console.error("Error:", error.message);
@@ -55,7 +82,7 @@ const Chatbot = () => {
         ...prevMessages,
         { sender: "bot", text: fallbackMessage },
       ]);
-      speak(fallbackMessage); // Trigger TTS
+      speak(fallbackMessage);
     } finally {
       setIsLoading(false);
     }
@@ -73,38 +100,80 @@ const Chatbot = () => {
     window.speechSynthesis.speak(utterance);
   };
 
+  const toggleSpeechRecognition = () => {
+    if (recognition && !isSpeaking) {
+      recognition.start();
+      setIsSpeaking(true);
+    } else if (recognition && isSpeaking) {
+      recognition.stop();
+      setIsSpeaking(false);
+    }
+  };
+
   return (
-    <div className="carelia">
+    <div className="chatbot-container">
+      {/* Header with Title */}
       <div className="header">
         <img src="/Carelia.png" alt="Carelia Logo" className="logo" />
         <h1>Carelia</h1>
       </div>
-      <p className="subheading">Your mental health assistant</p>
-      <div className="messages">
-  {messages.map((msg, idx) => (
-    <div key={idx} className={`message ${msg.sender}`}>
-      {msg.text}
-    </div>
-  ))}
-</div>
+      
+      {/* Subheading */}
+      <div className="subheading">
+        <p>Your mental health assistant</p>
+      </div>
 
+      {/* Main Chatbot Area */}
+      <div className="chat-container">
+        {/* Left Side - Phone-like Chatbot */}
+        <div className="left-side">
+          <div className="chat-box">
+            <div className="messages">
+              {messages.map((msg, idx) => (
+                <div key={idx} className={`message ${msg.sender}`}>
+                  {msg.sender === 'user' ? (
+                    <>
+                      <div className="user-avatar">👤</div>
+                      <div className="message-text">{msg.text}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bot-avatar">🤖</div>
+                      <div className="message-text">{msg.text}</div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* User Input Section */}
+          <div className="user-input-container">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message..."
+              aria-label="Chat input"
+            />
+            <button
+              className="mic-btn"
+              onClick={toggleSpeechRecognition}
+              aria-label="Speak message"
+            >
+              {isSpeaking ? "Stop" : "🎤"}
+            </button>
+          </div>
+        </div>
 
-      <div className="input-box">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Type your message..."
-          aria-label="Chat input"
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={isLoading || !input.trim()}
-          aria-label="Send message"
-        >
-          {isLoading ? "Loading..." : "Send"}
-        </button>
+        {/* Right Side - Bot's Avatar & Responses */}
+        <div className="right-side">
+          <div className="bot-avatar-container">
+            <div className="bot-avatar">🤖</div>
+            <div className="bot-message">How can I assist you today?</div>
+          </div>
+        </div>
       </div>
 
       <style>{`
@@ -115,130 +184,172 @@ const Chatbot = () => {
         }
 
         body {
-          overflow: hidden;
-          font-family: 'Arial', sans-serif;
-          background: linear-gradient(135deg, #A1C4FD, #C2E9FB);
+          font-family: 'Roboto', sans-serif;
+          background: linear-gradient(135deg, #ffc0cb, #D1B5E8);  /* Very light lavender to soft light purple gradient */
+          color: #333;
         }
 
-        .carelia {
+        .chatbot-container {
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: space-between;
+          width: 100%;
           height: 100vh;
-          width: 100vw;
-          text-align: center;
           padding: 20px;
         }
 
         .header {
-          margin-top: 30px;
           display: flex;
           align-items: center;
           justify-content: center;
+          margin-bottom: 20px;
         }
 
         .logo {
           max-width: 50px;
-          margin-right: 10px;
+          margin-right: 12px;
         }
 
         .header h1 {
           font-size: 2.5rem;
-          color: #6b4f97;
+          color: #6B4F97;
+          font-weight: 700;
         }
 
-        .subheading {
-          font-size: 1.5rem;
-          color: #6b4f97;
-          font-weight: normal;
+        .subheading p {
+          font-size: 1.4rem;
+          color: #9F7A8E;
           margin-top: 10px;
         }
 
-        .messages {
-  flex-grow: 1;
-  width: 100%;
-  max-width: 1600px;
-  height: 100%;
-  max-height: 600px;
-  padding: 20px;
-  overflow-y: auto;
-  background-color: #e9f5fc;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  margin: 20px 0px;
-  margin-bottom: 85px;
-  height: calc(80vh - 150px);  /* Make message box take full height minus the header and input box */
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
+        .chat-container {
+          display: flex;
+          flex: 1;
+          width: 100%;
+          max-width: 1200px;
+          justify-content: space-between;
+        }
 
-        .placeholder {
-          color: #aaa;
-          text-align: center;
-          font-style: italic;
-          font-size: 1.2rem;
+        .left-side, .right-side {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .left-side {
+          width: 50%;
+          background: #D1B5E8; /* Very light lavender for phone-like chatbox */
+          border-radius: 16px;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+          padding: 20px;
+          position: relative;
+        }
+
+        .chat-box {
+          padding: 20px;
+          flex-grow: 1;
+          overflow-y: auto;
+          border-radius: 16px;
+          background: #ffc0cb; /* Very light lavender for chatbox background inside phone */
+          box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .messages {
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 10px;
         }
 
         .message {
-          margin: 10px 0;
-          padding: 12px 16px;
-          border-radius: 10px;
-          max-width: 80%;
+          margin: 8px 0;
+          padding: 10px 15px;
+          border-radius: 12px;
+          max-width: 75%;
           word-wrap: break-word;
+          display: flex;
+          align-items: center;
+          transition: all 0.3s ease;
         }
 
         .message.user {
-          align-self: flex-end;
-          background-color: #6b4f97;
+          background-color: #D1A3C2;
           color: white;
+          align-self: flex-end;
         }
 
         .message.bot {
+          background-color: #F1D7E8;
+          color: #6B4F97;
           align-self: flex-start;
-          background-color: #f0f7fa;
-          color: #333;
-          border: 1px solid #ddd;
         }
 
-        .input-box {
-          display: flex;
-          width: 100%;
-          max-width: 1500px;
-          padding: 12px 18px;
-          background-color: white;
-          border-radius: 12px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          position: absolute;
-          bottom: 20px;
-        }
-
-        .input-box input {
-          flex: 1;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          margin-right: 10px;
+        .message-text {
           font-size: 1rem;
         }
 
-        .input-box button {
-          padding: 12px 20px;
-          background-color: #6b4f97;
-          color: white;
-          border: none;
+        .user-avatar, .bot-avatar {
+          margin-right: 12px;
+        }
+
+        .user-avatar {
+          font-size: 1.5rem;
+        }
+
+        .bot-avatar {
+          font-size: 2rem;
+        }
+
+        .user-input-container {
+          display: flex;
+          align-items: center;
+          margin-top: 15px;
+          padding: 12px;
+          background: #F1D7E8;
+          border-radius: 16px;
+        }
+
+        .user-input-container input {
+          flex: 1;
+          padding: 12px;
           border-radius: 8px;
+          font-size: 1rem;
+          background: #F1D7E8;
+          border: none;
+        }
+
+        .mic-btn {
+          background-color: #6B4F97;
+          color: white;
+          border-radius: 50%;
+          padding: 12px;
+          font-size: 1.5rem;
           cursor: pointer;
+          border: none;
         }
 
-        .input-box button:hover {
-          background-color: #5a3e85;
+        .mic-btn:hover {
+          background-color: #5A3E85;
         }
 
-        .input-box button:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
+        .right-side {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .bot-avatar-container {
+          text-align: center;
+        }
+
+        .bot-avatar {
+          font-size: 3rem;
+          margin-bottom: 10px;
+        }
+
+        .bot-message {
+          font-size: 1.2rem;
+          color: #6B4F97;
+          font-weight: 600;
         }
       `}</style>
     </div>
