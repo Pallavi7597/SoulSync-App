@@ -39,6 +39,7 @@ function HomePage() {
         <h1 style={{ fontSize: '4rem', fontWeight: 'bold' }}>
           {error ? 'SoulSync' : message}
         </h1>
+        
         <Link to="/skills">
           <button
             style={{
@@ -56,7 +57,7 @@ function HomePage() {
           </button>
         </Link>
         
-        {/* New Game Button */}
+        {/* Existing Game Button */}
         <Link to="/games">
           <button
             style={{
@@ -71,6 +72,24 @@ function HomePage() {
             }}
           >
             Go to Games
+          </button>
+        </Link>
+
+        {/* New Chat Button */}
+        <Link to="/mentalhealthissue">
+          <button
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: '#4CAF50',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              marginTop: '20px',
+            }}
+          >
+            Cerelia
           </button>
         </Link>
       </div>
