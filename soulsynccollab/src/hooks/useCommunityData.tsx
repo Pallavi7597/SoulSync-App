@@ -1,29 +1,31 @@
-import { Community, communityState } from "@/atoms/communitiesAtom";
+import { authModalState } from "@/atoms/authModalAtom";
+import { Community, CommunitySnippet, communityState } from "@/atoms/communitiesAtom";
 import { auth, firestore } from "@/firebase/clientApp";
-import { collection, getDoc, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, increment, writeBatch } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useSetRecoilState } from "recoil";
 
 const useCommunityData = () => {
   const [communityStateValue, setCommunityStateValue] =
     useRecoilState(communityState);
   const [loading, setLoading] = useState(false);
+  const setAuthModalState = useSetRecoilState(authModalState);
   const [error, setError] = useState("");
   const [user] = useAuthState(auth);
 
   const onJoinOrLeaveCommunity = (
     communityData: Community,
-    isJoined?: boolean
+    isJoined: boolean
   ) => {
     console.log("ON JOIN LEAVE", communityData.id);
 
     if (!user) {
-      // setAuthModalState({ open: true, view: "login" });
-      // return;
+      setAuthModalState({ open: true, view: "login" });
+      return;
     }
 
-    // setLoading(true);
+    setLoading(true);
     if (isJoined) {
       leaveCommunity(communityData.id);
       return;
@@ -35,18 +37,84 @@ const useCommunityData = () => {
     setLoading(true);
     try {
       const snippetDocs = await getDocs(
-        collection(firestore, `user/${user?.uid}/communitySnippets`)
+        collection(firestore, `users/${user?.uid}/communitySnippets`)
       );
 
-      const snippets = snippetDocs.docs.map((doc) => ({ ...doc.data() }));
+      const snippets = snippetDocs.docs.map((doc) =>({ ...doc.data() }));
+      console.log("here are snippets", snippets);
 
-    } catch (error) {
+      setCommunityStateValue(prev => ({
+        ...prev,
+        mySnippets: snippets as CommunitySnippet[],
+      }))
+
+    } catch (error: any) {
       console.log("getmySnippets error", error);
+      setError(error.message);
     }
+    setLoading(false);
   };
 
-  const joinCommunity = (communityData: Community) => {};
-  const leaveCommunity = (communityId: string) => {};
+  const joinCommunity = async (communityData: Community) => {
+    try {
+        const batch = writeBatch(firestore);
+        const newSnippet: CommunitySnippet = {
+            communityId: communityData.id,
+            ImageURL: communityData.imageURL || "",
+        };
+        batch.set(
+            doc(
+              firestore,
+              `users/${user?.uid}/communitySnippets`,
+              communityData.id // will for sure have this value at this point
+            ),
+            newSnippet
+          );
+
+        batch.update(doc(firestore, "communities", communityData.id), {
+            numberOfMembers: increment(1),
+        });
+
+        await batch.commit();
+
+        // Add current community to snippet
+        setCommunityStateValue((prev) => ({
+            ...prev,
+            mySnippets: [...prev.mySnippets, newSnippet],
+      }));
+    } catch (error: any) {
+        console.log("joinCommunity error", error);
+        setError(error.message);
+    }
+    setLoading(false);
+  };
+
+  const leaveCommunity = async (communityId: string) => {
+
+    try {
+        const batch = writeBatch(firestore);
+        batch.delete(
+            doc(firestore, `users/${user?.uid}/communitySnippets`,communityId)
+          );
+    
+          batch.update(doc(firestore, "communities", communityId), {
+            numberOfMembers: increment(-1),
+          });
+        await batch.commit();
+
+        setCommunityStateValue((prev) => ({
+            ...prev,
+            mySnippets: prev.mySnippets.filter(
+              (item) => item.communityId !== communityId
+            ),
+        }));
+
+    } catch (error: any) {
+        console.log("leaveCommunity error", error.message);
+        setError(error.message);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -56,6 +124,7 @@ const useCommunityData = () => {
   return {
     communityStateValue,
     onJoinOrLeaveCommunity,
+    loading,
   };
 };
 export default useCommunityData;
