@@ -2,6 +2,7 @@ import { authModalState } from "@/atoms/authModalAtom";
 import { Community, CommunitySnippet, communityState } from "@/atoms/communitiesAtom";
 import { auth, firestore } from "@/firebase/clientApp";
 import { collection, doc, getDoc, getDocs, increment, writeBatch } from "firebase/firestore";
+import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useRecoilState, useSetRecoilState } from "recoil";
@@ -10,6 +11,7 @@ const useCommunityData = () => {
   const [communityStateValue, setCommunityStateValue] =
     useRecoilState(communityState);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const setAuthModalState = useSetRecoilState(authModalState);
   const [error, setError] = useState("");
   const [user] = useAuthState(auth);
@@ -116,10 +118,55 @@ const useCommunityData = () => {
     setLoading(false);
   };
 
+  const getCommunityData = async (communityId: string) => {
+    // this causes weird memory leak error - not sure why
+    // setLoading(true);
+    console.log("GETTING COMMUNITY DATA");
+
+    try {
+      const communityDocRef = doc(
+        firestore,
+        "communities",
+        communityId as string
+      );
+      const communityDoc = await getDoc(communityDocRef);
+      // setCommunityStateValue((prev) => ({
+      //   ...prev,
+      //   visitedCommunities: {
+      //     ...prev.visitedCommunities,
+      //     [communityId as string]: {
+      //       id: communityDoc.id,
+      //       ...communityDoc.data(),
+      //     } as Community,
+      //   },
+      // }));
+      setCommunityStateValue((prev) => ({
+        ...prev,
+        currentCommunity: {
+          id: communityDoc.id,
+          ...communityDoc.data(),
+        } as Community,
+      }));
+    } catch (error: any) {
+      console.log("getCommunityData error", error.message);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setCommunityStateValue(prev => ({
+        ...prev,
+        postVotes: [],
+      }));
+      return;
+    }
     getMySnippets();
   }, [user]);
+
+  useEffect(() => {
+
+  }, []);
 
   return {
     communityStateValue,
