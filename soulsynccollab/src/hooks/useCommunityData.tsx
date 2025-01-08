@@ -119,27 +119,16 @@ const useCommunityData = () => {
   };
 
   const getCommunityData = async (communityId: string) => {
-    // this causes weird memory leak error - not sure why
-    // setLoading(true);
+
     console.log("GETTING COMMUNITY DATA");
 
     try {
       const communityDocRef = doc(
         firestore,
         "communities",
-        communityId as string
+        communityId
       );
       const communityDoc = await getDoc(communityDocRef);
-      // setCommunityStateValue((prev) => ({
-      //   ...prev,
-      //   visitedCommunities: {
-      //     ...prev.visitedCommunities,
-      //     [communityId as string]: {
-      //       id: communityDoc.id,
-      //       ...communityDoc.data(),
-      //     } as Community,
-      //   },
-      // }));
       setCommunityStateValue((prev) => ({
         ...prev,
         currentCommunity: {
@@ -165,8 +154,12 @@ const useCommunityData = () => {
   }, [user]);
 
   useEffect(() => {
+    const { communityId } = router.query
 
-  }, []);
+    if (communityId && !communityStateValue.currentCommunity) {
+       getCommunityData(communityId as string);
+    }
+  }, [router.query, communityStateValue.currentCommunity]);
 
   return {
     communityStateValue,
