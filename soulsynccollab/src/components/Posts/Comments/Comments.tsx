@@ -45,6 +45,7 @@ const Comments: React.FC<CommentsProps> = ({
   const [createLoading, setcreateLoading] = useState(false);
   const setAuthModalState = useSetRecoilState(authModalState);
   const setPostState = useSetRecoilState(postState);
+  const [loadingDeleteId, setLoadingDeleteId] = useState('');
 
   const onCreateComment = async (commentText: string) => {
     setcreateLoading(true);
@@ -88,19 +89,48 @@ const Comments: React.FC<CommentsProps> = ({
     setcreateLoading(false);
   };
 
-  const onDeleteComment = async (comment: any) => {};
+  const onDeleteComment = async (comment: Comment) => {
+    setLoadingDeleteId(comment.id);
+    try {
+        const batch = writeBatch(firestore);
+        const commentDocRef = doc(firestore, "comments", comment.id);
+        batch.delete(commentDocRef);
+
+        const postDocRef = doc(firestore, 'posts', selectedPost?.id!);
+        batch.update(postDocRef, {
+            numberOfComments: increment(-1)
+        });
+
+        await batch.commit();
+
+        // update client recoild state
+        setPostState((prev) => ({
+            ...prev,
+            selectedPost: {
+                ...prev.selectedPost,
+                numberOfComments: prev.selectedPost?.numberOfComments! -1,
+            } as Post
+        }));
+
+        setComments((prev) => prev.filter((item) => item.id !== comment.id));
+
+    } catch (error: any) {
+        console.log("onDeleteComment error", error.message)
+    }
+    setLoadingDeleteId('');
+  };
 
   const getPostComments = async () => {
     if (!selectedPost?.id) {
-        console.log("No post ID available");
-        setFetchLoading(false);
-        return;
-      }
+      console.log("No post ID available");
+      setFetchLoading(false);
+      return;
+    }
     try {
       const commentsQuery = query(
         collection(firestore, "comments"),
         where("postId", "==", selectedPost?.id),
-        orderBy('createdAt','desc')
+        orderBy("createdAt", "desc")
       );
       const commentDocs = await getDocs(commentsQuery);
       const comments = commentDocs.docs.map((doc) => ({
@@ -129,13 +159,15 @@ const Comments: React.FC<CommentsProps> = ({
         fontSize="10pt"
         width="100%"
       >
-        <CommentInput
-          commentText={commentText}
-          setCommentText={setCommentText}
-          user={user}
-          createloading={createLoading}
-          onCreateComment={onCreateComment}
-        />
+        {!fetchLoading && (
+          <CommentInput
+            commentText={commentText}
+            setCommentText={setCommentText}
+            user={user}
+            createloading={createLoading}
+            onCreateComment={onCreateComment}
+          />
+        )}
       </Flex>
       <Stack spacing={6} p={2}>
         {fetchLoading ? (
@@ -166,9 +198,10 @@ const Comments: React.FC<CommentsProps> = ({
               <>
                 {comments.map((comment) => (
                   <CommentItem
+                    key={comment.id}
                     comment={comment}
                     onDeleteComment={onDeleteComment}
-                    loadingDelete={false}
+                    loadingDelete={loadingDeleteId === comment.id}
                     userId={user.uid}
                   />
                 ))}
