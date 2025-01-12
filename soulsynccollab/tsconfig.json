@@ -17,6 +17,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/components/Chat/Messages.tsx", "src/components/Chat/Message.tsx", "src/components/Chat/Chats.tsx"],
   "exclude": ["node_modules"]
 }

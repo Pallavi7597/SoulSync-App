@@ -10,25 +10,28 @@ import { auth } from "@/firebase/clientApp";
 import { useSetRecoilState } from "recoil";
 import { authModalState } from "@/atoms/authModalAtom";
 import useDirectory from "@/hooks/useDirectory";
+import useCreatePost from "@/hooks/useCreatePost";
 
 const CreatePostLink: React.FC = () => {
   const router = useRouter(); 
   const [user] = useAuthState(auth);
   const setAuthModalState = useSetRecoilState(authModalState);
   const { toggleMenuOpen } =useDirectory();
-  const onClick = () => {
-    if(!user) {
-        setAuthModalState({open: true, view: "login"});
-        return;
-    }
-    const { communityId } = router.query;
+  // const onClick = () => {
+  //   if(!user) {
+  //       setAuthModalState({open: true, view: "login"});
+  //       return;
+  //   }
+  //   const { communityId } = router.query;
 
-    if(communityId) {
-      router.push(`/r/${communityId}/submit`);
-      return;
-    }
-    toggleMenuOpen();
-  };
+  //   if(communityId) {
+  //     router.push(`/r/${communityId}/submit`);
+  //     return;
+  //   }
+  //   toggleMenuOpen();
+  // };
+
+  const { onClick } = useCreatePost();
 
   return (
     <Flex

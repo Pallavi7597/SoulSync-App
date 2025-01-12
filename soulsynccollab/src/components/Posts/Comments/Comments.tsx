@@ -6,6 +6,7 @@ import {
   SkeletonCircle,
   SkeletonText,
   Stack,
+  useToast,
 } from "@chakra-ui/react";
 import { User } from "firebase/auth";
 import React, { useEffect, useState } from "react";
@@ -24,9 +25,9 @@ import {
   orderBy,
   getDocs,
 } from "firebase/firestore";
-import { comment } from "postcss";
 import { useSetRecoilState } from "recoil";
 import CommentItem, { Comment } from "./CommentItem";
+import { Filter } from "bad-words";
 
 type CommentsProps = {
   user: User;
@@ -42,16 +43,30 @@ const Comments: React.FC<CommentsProps> = ({
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [fetchLoading, setFetchLoading] = useState(true);
-  const [createLoading, setcreateLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
   const setAuthModalState = useSetRecoilState(authModalState);
   const setPostState = useSetRecoilState(postState);
-  const [loadingDeleteId, setLoadingDeleteId] = useState('');
+  const [loadingDeleteId, setLoadingDeleteId] = useState("");
+  const toast = useToast();
 
   const onCreateComment = async (commentText: string) => {
-    setcreateLoading(true);
+    setCreateLoading(true);
+
+    const filter = new Filter();
+    if (filter.isProfane(commentText)) {
+      toast({
+        title: "Inappropriate Language",
+        description: "Your comment contains inappropriate language and cannot be posted.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      setCreateLoading(false);
+      return;
+    }
+
     try {
       const batch = writeBatch(firestore);
-      // Create comment document
       const commentDocRef = doc(collection(firestore, "comments"));
 
       const newComment: Comment = {
@@ -84,38 +99,58 @@ const Comments: React.FC<CommentsProps> = ({
         } as Post,
       }));
     } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "An error occurred while posting your comment.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
       console.log("onCreateComment error", error.message);
     }
-    setcreateLoading(false);
+    setCreateLoading(false);
   };
 
   const onDeleteComment = async (comment: Comment) => {
     setLoadingDeleteId(comment.id);
     try {
-        const batch = writeBatch(firestore);
-        const commentDocRef = doc(firestore, "comments", comment.id);
-        batch.delete(commentDocRef);
+      const batch = writeBatch(firestore);
+      const commentDocRef = doc(firestore, "comments", comment.id);
+      batch.delete(commentDocRef);
 
-        const postDocRef = doc(firestore, 'posts', selectedPost?.id!);
-        batch.update(postDocRef, {
-            numberOfComments: increment(-1)
-        });
+      const postDocRef = doc(firestore, "posts", selectedPost?.id!);
+      batch.update(postDocRef, {
+        numberOfComments: increment(-1),
+      });
 
-        await batch.commit();
+      await batch.commit();
 
-        // update client recoild state
-        setPostState((prev) => ({
-            ...prev,
-            selectedPost: {
-                ...prev.selectedPost,
-                numberOfComments: prev.selectedPost?.numberOfComments! -1,
-            } as Post
-        }));
+      setPostState((prev) => ({
+        ...prev,
+        selectedPost: {
+          ...prev.selectedPost,
+          numberOfComments: prev.selectedPost?.numberOfComments! - 1,
+        } as Post,
+      }));
 
-        setComments((prev) => prev.filter((item) => item.id !== comment.id));
+      setComments((prev) => prev.filter((item) => item.id !== comment.id));
 
+      toast({
+        title: "Comment Deleted",
+        description: "Your comment was successfully deleted.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
     } catch (error: any) {
-        console.log("onDeleteComment error", error.message)
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting your comment.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      console.log("onDeleteComment error", error.message);
     }
     setLoadingDeleteId('');
   };
@@ -151,14 +186,7 @@ const Comments: React.FC<CommentsProps> = ({
 
   return (
     <Box bg="white" p={2} borderRadius="0px 0px 4px 4px">
-      <Flex
-        direction="column"
-        pl={10}
-        pr={4}
-        mb={6}
-        fontSize="10pt"
-        width="100%"
-      >
+      <Flex direction="column" pl={10} pr={4} mb={6} fontSize="10pt" width="100%">
         {!fetchLoading && (
           <CommentInput
             commentText={commentText}
