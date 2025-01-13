@@ -5,7 +5,7 @@ from langchain_groq import ChatGroq
 import os
 
 # Set up API key for ChatGroq
-os.environ["GROQ_API_KEY"] = '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'
+os.environ["GROQ_API_KEY"] = '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'
 
 # Initialize the Groq LLM with parameters to limit response length and ensure conversational tone
 llm = ChatGroq(temperature=0.7, model_name="groq/llama-3.3-70b-versatile")
@@ -117,23 +117,67 @@ CORS(app, origins=['http://localhost:3000'])  # Update CORS origin as needed
 
 def handle_user_message(message, agent):
     try:
-        task = Task(
-            description=f"Respond empathetically and conversationally to the user about '{agent}'. The response should be unique each time and consider the emotional context based on user input. Offer actionable advice, empathy, and encouragement. Keep the tone supportive and relaxed. Don't repeat the same response — adjust the advice or suggestions based on what the user has shared, and offer new ways to help them cope.",
-            expected_output="A varied, issue-specific, empathetic, and conversational response, offering actionable advice, encouragement, and follow-up questions.",
+        # If the message is a simple greeting like "hello", "hi", or "how are you?"
+        if "hello" in message.lower() or "hi" in message.lower() or "how are you" in message.lower():
+            # Respond with a simple empathetic greeting
+            return {
+                "status": "success", 
+                "response": f"Hello! I'm here to assist you with any challenges you're facing. How are you feeling today? Let me know if you'd like to talk about anything."
+            }
+
+        # Initialize tasks list
+        tasks = []
+
+        # 1. Empathy and Validation Task (specific to agent)
+        empathy_task = Task(
+            description=f"Respond empathetically to the user's message, acknowledging their emotions as valid and understandable. {agent.role}'s goal is to assist users with {agent.role}. Show understanding and support based on the specific mental health issue the user is facing, such as anxiety, depression, or stress. Validate their feelings and provide compassionate support.",
+            expected_output="A compassionate, empathetic response that acknowledges the user's feelings and shows understanding, tailored to the user's mental health issue.output not more than 10 line",
             input_value=message,
             input_type="str",
             agent=agent,
         )
+        tasks.append(empathy_task)
 
+        # 2. Coping Strategy Task (specific to agent)
+        coping_task = Task(
+            description=f"Provide a coping strategy for the user's issue, such as deep breathing for anxiety, thought reframing for depression, or grounding exercises for PTSD. Suggest practical and actionable steps tailored to {agent.role}'s goal, helping the user manage their emotional state effectively.",
+            expected_output="A practical coping strategy tailored to the specific emotional issue.output not more than 15 line",
+            input_value=message,
+            input_type="str",
+            agent=agent,
+        )
+        tasks.append(coping_task)
+
+        # 3. Mindfulness Exercise Task (specific to agent)
+        mindfulness_task = Task(
+            description=f"Suggest a mindfulness or relaxation exercise that is aligned with {agent.role}'s goal. For example, for anxiety, a deep breathing exercise; for depression, a gratitude practice; or for PTSD, a grounding technique. Guide the user through a simple, actionable exercise.",
+            expected_output="A tailored mindfulness exercise or relaxation technique to help the user manage their emotional state.output not more than 15 line",
+            input_value=message,
+            input_type="str",
+            agent=agent,
+        )
+        tasks.append(mindfulness_task)
+
+        # 4. Goal-Setting Task (specific to agent)
+        goal_setting_task = Task(
+            description=f"Help the user set a small, achievable goal specific to {agent.role}'s work. For example, for anxiety, setting a manageable task that feels less overwhelming. For depression, setting a goal related to self-care. Encourage the user to break down their larger goals into smaller, actionable steps.",
+            expected_output="A small, manageable goal that aligns with the user's issue.output not more than 15 line",
+            input_value=message,
+            input_type="str",
+            agent=agent,
+        )
+        tasks.append(goal_setting_task)
+
+        # Create the Crew and execute tasks sequentially
         crew = Crew(
             agents=[agent],
-            tasks=[task],
+            tasks=tasks,
             verbose=True,
             process=Process.sequential,
             full_output=True,
             manager_llm=llm,
         )
-
+        
         # Kick off the crew process and get the result
         results = crew.kickoff()
 
@@ -147,6 +191,24 @@ def handle_user_message(message, agent):
             return {"status": "error", "error": "No response generated by the agent."}
     except Exception as e:
         return {"status": "error", "error": f"Error during processing: {str(e)}"}
+    
+# Gratitude Garden logic
+gratitude_items = []
+
+@app.route('/api/gratitude', methods=['GET', 'POST'])
+def gratitude_garden():
+    global gratitude_items
+    if request.method == 'POST':
+        data = request.get_json()
+        item = data.get("item")
+        if not item:
+            return jsonify({"status": "error", "error": "Gratitude item is required"}), 400
+
+        gratitude_items.append(item)
+        return jsonify({"status": "success", "message": "Gratitude item added!", "items": gratitude_items}), 200
+
+    elif request.method == 'GET':
+        return jsonify({"status": "success", "items": gratitude_items}), 200
 
 @app.route('/api/chat', methods=['POST'])
 def chat():

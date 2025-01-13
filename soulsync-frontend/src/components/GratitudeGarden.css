@@ -1,0 +1,370 @@
+/* General styles for the container */
+.garden-container {
+  text-align: center;
+  padding: 0;
+  background-color: #c8e6c9; /* Light green for a garden feel */
+  min-height: 100vh;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  align-items: center; /* Center items horizontally */
+  justify-content: flex-start; /* Align content to the top */
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Classy and elegant heading for Gratitude Garden */
+.gratitude-garden-heading {
+  font-family: 'Playfair Display', serif; /* Elegant serif font for a classy look */
+  font-size: 3rem; /* Large size for emphasis */
+  font-weight: 600; /* Semi-bold weight for sophistication */
+  color: #2E3B4E; /* Dark, rich color for a classy feel */
+  text-align: center; /* Center the text */
+  margin-bottom: 2rem; /* Space below the heading */
+  text-transform: uppercase; /* Uppercase for a refined, structured feel */
+  letter-spacing: 2px; /* Increased letter-spacing for elegance */
+  position: relative; /* Room for subtle animations */
+  animation: fadeIn 1.5s ease-in-out; /* Smooth fade-in effect */
+  cursor: pointer; /* Pointer cursor to make it interactive */
+  transition: transform 0.3s ease, color 0.3s ease; /* Smooth transitions */
+}
+
+/* Subtle fade-in effect */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px); /* Start from above the screen */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0); /* End in normal position */
+  }
+}
+
+/* Hover effect to add a sophisticated scale and color change */
+.gratitude-garden-heading:hover {
+  transform: scale(1.05); /* Slight scale-up on hover */
+  color: #A3B9C6; /* Lighter, more soothing color when hovered */
+}
+
+/* Adding a gentle, glowing effect on hover */
+.gratitude-garden-heading:hover::before {
+  content: '✨'; /* Add a subtle sparkle before the heading */
+  position: absolute;
+  top: -30px; /* Slightly above the heading */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 28px;
+  animation: glowEffect 2s ease-in-out infinite; /* Subtle glow animation */
+}
+
+/* Glow animation for sparkle */
+@keyframes glowEffect {
+  0% {
+    opacity: 0.6;
+    transform: translateY(-5px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translateY(-5px);
+  }
+}
+
+/* Ground styling */
+.ground {
+  background-color: #3c9d3b;
+  height: 80px;
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+  z-index: 1;
+}
+
+/* Tree and flower styles for growth */
+.tree,
+.flower {
+  font-size: 60px;
+  margin-bottom: 145px;
+  animation-duration: 8s;
+  animation-iteration-count: infinite;
+}
+
+.tree {
+  animation-name: growTree;
+}
+
+.flower {
+  animation-name: bloomFlower;
+}
+
+/* Animations */
+@keyframes growTree {
+  0%, 100% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes bloomFlower {
+  0%, 100% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Add gratitude input and buttons */
+.add-gratitude {
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Input and button styles */
+input,
+.journal-input {
+  padding: 12px 15px;
+  font-size: 16px;
+  margin-right: 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d1d1;
+  width: 100%; /* Responsive width */
+  max-width: 320px;
+  background-color: #f8f8f8;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+button,
+.add-gratitude-button {
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #6d4c41; /* Dark brown for a sophisticated touch */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+button:hover,
+.add-gratitude-button:hover {
+  background-color: #4e342e;
+  transform: translateY(-2px);
+}
+
+/* Garden layout */
+.garden {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  gap: 20px;
+  position: relative;
+  z-index: 0; /* Ensure the garden remains below the journal */
+}
+
+/* Individual plant styling */
+.plant {
+  background-color: #e8f5e9;
+  border: 2px solid #2c9c61;
+  border-radius: 15px;
+  padding: 20px;
+  width: 120px;
+  text-align: center;
+  cursor: grab;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.plant:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.plant-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.plant-icon {
+  font-size: 40px;
+}
+
+.plant-text {
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.plant-stage {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.plant-actions button {
+  margin-top: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  background-color: #38a3a5;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.plant-actions button:hover {
+  background-color: #2c8786;
+}
+
+/* Sun styling */
+.sun {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: #ffdd57;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  box-shadow: 0 4px 15px rgba(255, 221, 87, 0.8);
+  z-index: 1;
+}
+
+/* Cloud styling */
+.cloud {
+  position: absolute;
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+  z-index: 1;
+  opacity: 0.9; /* Slight transparency for realism */
+}
+
+.cloud1 {
+  width: 200px;
+  height: 100px;
+  top: 10%;
+  left: 10%;
+}
+
+.cloud2 {
+  width: 250px;
+  height: 120px;
+  top: 15%;
+  right: 15%;
+}
+
+/* Gratitude Journal Container */
+.gratitude-journal-container {
+  background-color: #f4f1e1; /* Light beige background for a calm feel */
+  border-radius: 15px; /* Rounded corners for a soft look */
+  padding: 30px; /* Padding inside for spacing */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+  max-width: 600px; /* Max width for a neat container */
+  margin: 20px 0; /* Margin above and below the journal container */
+  font-family: 'Georgia', serif; /* Elegant serif font for journal feel */
+  border: 1px solid #d1b89e; /* Subtle border for a paper-like effect */
+  position: absolute; /* Absolute positioning for left-middle placement */
+  top: 40%; /* Vertically center */
+  left: 10%; /* Left middle position */
+  transform: translateY(-50%); /* Adjust to exactly center it vertically */
+  max-height: 600px; /* Fixed height for the journal container */
+  overflow: auto; /* Enable scrolling for the entire journal container */
+  display: flex;
+  flex-direction: column; /* Stack the content vertically */
+}
+
+/* Journal container overflow scroll */
+.gratitude-journal-container {
+  overflow: auto; /* Make the entire journal scrollable */
+}
+
+/* Header for the gratitude journal */
+.journal-header {
+  font-size: 30px;                   /* Larger font size for emphasis */
+  font-weight: 700;                  /* Bold to stand out */
+  color: #3e3b2a;                    /* Dark brown for sophistication */
+  margin-bottom: 30px;                /* Space below the header */
+  text-align: center;
+  text-transform: uppercase;         /* Uppercase for structure */
+  letter-spacing: 2px;               /* Slight letter spacing for elegance */
+  font-family: 'Playfair Display', serif; /* Elegant font for the header */
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Textarea for the initial gratitude input */
+.journal-input {
+  width: 100%;
+  max-width: 500px;
+  padding: 14px;
+  font-size: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #d1b89e;
+  border-radius: 10px;
+  background-color: #faf1e1; /* Lighter shade for a warm, inviting look */
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
+  resize: none;                    /* Disable resizing for consistency */
+  transition: all 0.3s ease;        /* Smooth transition */
+}
+
+.journal-input:focus {
+  outline: none;
+  border-color: #3e3b2a;            /* Dark border on focus */
+  box-shadow: 0 0 8px rgba(62, 59, 42, 0.3); /* Focus glow effect */
+}
+
+/* Button for adding gratitude entry */
+.add-gratitude-button {
+  background-color: #6d4c41;        /* Dark brown for a sophisticated look */
+  color: white;
+  font-size: 16px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.add-gratitude-button:hover {
+  background-color: #4e342e;        /* Darker brown when hovered */
+  transform: translateY(-2px);       /* Slight lift effect */
+}
+
+/* Journal entries container */
+.journal-entries {
+  margin-top: 30px;
+  overflow-y: auto; /* Allow scrolling inside the journal entries container */
+  max-height: 300px; /* Set a fixed max-height for scrolling */
+}
+
+/* Individual journal entry container */
+.journal-entry {
+  background-color: #ffffff;         /* White background for the entry */
+  padding: 20px;
+  margin-bottom: 15px;
+  border: 1px solid #e3c2a8;         /* Subtle border for entry */
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Soft shadow */
+  transition: all 0.3s ease;          /* Smooth transition */
+}
+
+.journal-entry:hover {
+  background-color: #f5e1c0;         /* Light hover effect */
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2); /* Increased shadow on hover */
+}

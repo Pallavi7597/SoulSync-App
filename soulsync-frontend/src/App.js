@@ -6,6 +6,7 @@ import BreathingGame from './components/BreathingGame';
 import MoodQuest from './components/MoodQuest';
 import Chatbot from './components/Chatbot'; // Chat Page component
 import MentalHealthIssuesPage from "./components/MentalHealthIssuesPage";
+import GratitudeGarden from "./components/GratitideGarden";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/moodquest" element={<MoodQuest />} />
         <Route path="/chat/:issueId" element={<Chatbot />} /> {/* Chat feature route */}
         <Route path="/mentalhealthissue" element={<MentalHealthIssuesPage />} />
+        <Route path="/gratitudegarden" element={<GratitudeGarden />} />
         
         {/* Redirect invalid routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
