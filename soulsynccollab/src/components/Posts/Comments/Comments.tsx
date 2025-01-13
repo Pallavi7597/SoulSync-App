@@ -24,6 +24,7 @@ import {
   where,
   orderBy,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { useSetRecoilState } from "recoil";
 import CommentItem, { Comment } from "./CommentItem";
@@ -56,7 +57,8 @@ const Comments: React.FC<CommentsProps> = ({
     if (filter.isProfane(commentText)) {
       toast({
         title: "Inappropriate Language",
-        description: "Your comment contains inappropriate language and cannot be posted.",
+        description:
+          "Your comment contains inappropriate language and cannot be posted.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -134,25 +136,44 @@ const Comments: React.FC<CommentsProps> = ({
       }));
 
       setComments((prev) => prev.filter((item) => item.id !== comment.id));
-
-      toast({
-        title: "Comment Deleted",
-        description: "Your comment was successfully deleted.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "An error occurred while deleting your comment.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
       console.log("onDeleteComment error", error.message);
     }
-    setLoadingDeleteId('');
+    setLoadingDeleteId("");
+  };
+
+  const onEditComment = async (updatedText: string, comment: Comment) => {
+    try {
+      const commentDocRef = doc(firestore, "comments", comment.id);
+
+      // Update the comment in Firestore
+      const updatedAt = serverTimestamp();
+      const isEdited = true;
+      await updateDoc(commentDocRef, {
+        text: updatedText,
+        createdAt: updatedAt,
+        isEdited: isEdited,
+      });
+
+      // Update the comment locally and sort the list
+      setComments((prev) => {
+        const updatedComments = prev.map((item) =>
+          item.id === comment.id
+            ? {
+                ...item,
+                text: updatedText,
+                createdAt: { seconds: Date.now() / 1000 } as Timestamp,
+                isEdited: true,
+              }
+            : item
+        );
+        return updatedComments.sort(
+          (a, b) => b.createdAt.seconds - a.createdAt.seconds
+        );
+      });
+    } catch (error: any) {
+      console.error("onEditComment error", error.message);
+    }
   };
 
   const getPostComments = async () => {
@@ -186,7 +207,14 @@ const Comments: React.FC<CommentsProps> = ({
 
   return (
     <Box bg="white" p={2} borderRadius="0px 0px 4px 4px">
-      <Flex direction="column" pl={10} pr={4} mb={6} fontSize="10pt" width="100%">
+      <Flex
+        direction="column"
+        pl={10}
+        pr={4}
+        mb={6}
+        fontSize="10pt"
+        width="100%"
+      >
         {!fetchLoading && (
           <CommentInput
             commentText={commentText}
@@ -229,8 +257,9 @@ const Comments: React.FC<CommentsProps> = ({
                     key={comment.id}
                     comment={comment}
                     onDeleteComment={onDeleteComment}
+                    onEditComment={onEditComment}
                     loadingDelete={loadingDeleteId === comment.id}
-                    userId={user.uid}
+                    userId={user?.uid}
                   />
                 ))}
               </>
