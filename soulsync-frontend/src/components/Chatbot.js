@@ -6,9 +6,10 @@ const Chatbot = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const { issueId } = useParams(); 
+  const { issueId } = useParams();
 
-  const [recognition, setRecognition] = useState(null);  // Speech recognition
+  const [recognition, setRecognition] = useState(null); // Speech recognition
+  const [isBotSpeaking, setIsBotSpeaking] = useState(false); // Track if bot is speaking
 
   useEffect(() => {
     // Initialize speech recognition
@@ -52,9 +53,9 @@ const Chatbot = () => {
       const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: input,
-          issue: issueId 
+          issue: issueId
         }),
       });
 
@@ -66,14 +67,14 @@ const Chatbot = () => {
       if (data.status === "success") {
         const botMessage = { sender: "bot", text: data.response };
         setMessages((prevMessages) => [...prevMessages, botMessage]);
-        speak(data.response);
+        speak(data.response); // Speak the bot's response
       } else {
         const errorMessage = data.error || "Sorry, something went wrong.";
         setMessages((prevMessages) => [
           ...prevMessages,
           { sender: "bot", text: errorMessage },
         ]);
-        speak(errorMessage);
+        speak(errorMessage); // Speak error message
       }
     } catch (error) {
       console.error("Error:", error.message);
@@ -82,7 +83,7 @@ const Chatbot = () => {
         ...prevMessages,
         { sender: "bot", text: fallbackMessage },
       ]);
-      speak(fallbackMessage);
+      speak(fallbackMessage); // Speak fallback message
     } finally {
       setIsLoading(false);
     }
@@ -95,9 +96,25 @@ const Chatbot = () => {
   };
 
   const speak = (text) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    window.speechSynthesis.speak(utterance);
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.volume = 1; // Full volume
+      utterance.rate = 1;   // Normal speaking rate
+      utterance.pitch = 1;  // Normal pitch
+
+      // Set bot speaking state to true to start animation
+      setIsBotSpeaking(true);
+
+      utterance.onend = () => {
+        // Set bot speaking state to false after speaking finishes
+        setIsBotSpeaking(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.log("Speech Synthesis not supported in this browser.");
+    }
   };
 
   const toggleSpeechRecognition = () => {
@@ -117,7 +134,7 @@ const Chatbot = () => {
         <img src="/Carelia.png" alt="Carelia Logo" className="logo" />
         <h1>Carelia</h1>
       </div>
-      
+
       {/* Subheading */}
       <div className="subheading">
         <p>Your mental health assistant</p>
@@ -138,7 +155,10 @@ const Chatbot = () => {
                     </>
                   ) : (
                     <>
-                      <div className="bot-avatar">🤖</div>
+                      <div className={`bot-avatar ${isBotSpeaking ? "speaking" : ""}`}>
+                        {/* Avatar to show speaking animation */}
+                        <img src="/avatar.jpg" alt="Doctor Avatar" className="doctor-avatar-img" />
+                      </div>
                       <div className="message-text">{msg.text}</div>
                     </>
                   )}
@@ -146,7 +166,7 @@ const Chatbot = () => {
               ))}
             </div>
           </div>
-          
+
           {/* User Input Section */}
           <div className="user-input-container">
             <input
@@ -170,13 +190,33 @@ const Chatbot = () => {
         {/* Right Side - Bot's Avatar & Responses */}
         <div className="right-side">
           <div className="bot-avatar-container">
-            <div className="bot-avatar">🤖</div>
-            <div className="bot-message">How can I assist you today?</div>
+            <img src="/avatar.jpg" alt="Doctor Avatar" className="doctor-avatar-img" />
+            <div className="bot-message">
+              {messages[messages.length - 1]?.sender === "bot" ? messages[messages.length - 1]?.text : "How can I assist you today?"}
+            </div>
           </div>
         </div>
       </div>
 
       <style>{`
+        .doctor-avatar-img {
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          border: 2px solid #6B4F97;
+          margin-bottom: 10px;
+        }
+
+        .speaking {
+          animation: lip-sync 0.5s infinite;
+        }
+
+        @keyframes lip-sync {
+          0% { transform: scaleY(1); }
+          50% { transform: scaleY(1.2); }
+          100% { transform: scaleY(1); }
+        }
+
         * {
           margin: 0;
           padding: 0;
@@ -264,7 +304,7 @@ const Chatbot = () => {
           margin: 8px 0;
           padding: 10px 15px;
           border-radius: 12px;
-          max-width: 75%;
+          max-width: 100%;
           word-wrap: break-word;
           display: flex;
           align-items: center;
@@ -296,7 +336,7 @@ const Chatbot = () => {
         }
 
         .bot-avatar {
-          font-size: 2rem;
+          font-size: 3rem; /* Increased avatar size */
         }
 
         .user-input-container {
@@ -341,15 +381,17 @@ const Chatbot = () => {
           text-align: center;
         }
 
-        .bot-avatar {
-          font-size: 3rem;
+        .bot-avatar-container img {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          border: 2px solid #6B4F97;
           margin-bottom: 10px;
         }
 
         .bot-message {
           font-size: 1.2rem;
           color: #6B4F97;
-          font-weight: 600;
         }
       `}</style>
     </div>
@@ -357,4 +399,3 @@ const Chatbot = () => {
 };
 
 export default Chatbot;
-

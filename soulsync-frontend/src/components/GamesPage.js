@@ -72,6 +72,26 @@ function GamesPage() {
           </button>
         </Link>
 
+        <Link to="/gratitude-garden">
+          <button
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#7E57C2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              width: '200px',
+              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+              margin: '10px',
+            }}
+          >
+            🧘‍♂️ Gratitide Garden
+          </button>
+        </Link>
+
         <Link to="/moodquest">
           <button
             style={{
