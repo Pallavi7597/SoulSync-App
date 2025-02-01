@@ -25,6 +25,8 @@ import {
   orderBy,
   getDocs,
   updateDoc,
+  getDoc,
+  deleteField,
 } from "firebase/firestore";
 import { useSetRecoilState } from "recoil";
 import CommentItem, { Comment } from "./CommentItem";
@@ -80,6 +82,8 @@ const Comments: React.FC<CommentsProps> = ({
         postTitle: selectedPost?.title!,
         text: commentText,
         createdAt: serverTimestamp() as Timestamp,
+        voteStatus: 0, // Default value for voteStatus
+        votes: {} // Initialize an empty object for votes
       };
       batch.set(commentDocRef, newComment);
 
@@ -101,13 +105,6 @@ const Comments: React.FC<CommentsProps> = ({
         } as Post,
       }));
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "An error occurred while posting your comment.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
       console.log("onCreateComment error", error.message);
     }
     setCreateLoading(false);
@@ -176,6 +173,66 @@ const Comments: React.FC<CommentsProps> = ({
     }
   };
 
+  const onVote = async (commentId: string, voteValue: 1 | -1) => {
+    if (!user?.uid) {
+      setAuthModalState({ open: true, view: "login" });
+      return;
+    }
+  
+    const voteType = voteValue === 1 ? "up" : "down";
+    const userRef = doc(firestore, "users", user.uid);
+    const commentRef = doc(firestore, "comments", commentId);
+    const commentDoc = await getDoc(commentRef);
+  
+    if (!commentDoc.exists()) return;
+  
+    const currentVotes = commentDoc.data()?.votes || {};
+    const hasVoted = currentVotes[user.uid];
+    let newVoteCount = commentDoc.data()?.voteStatus || 0;
+  
+    // If the user has already voted
+    if (hasVoted) {
+      if (hasVoted === voteType) {
+        // If the user clicks the same vote again, unhighlight and reduce vote count
+        newVoteCount -= voteValue;
+        await updateDoc(commentRef, {
+          [`votes.${user.uid}`]: deleteField(),
+          voteStatus: newVoteCount,
+        });
+      } else {
+        // If the user switches votes, adjust the vote count accordingly
+        newVoteCount += voteValue * 2; // +2 for upvote after downvote, -2 for downvote after upvote
+        await updateDoc(commentRef, {
+          [`votes.${user.uid}`]: voteType,
+          voteStatus: newVoteCount,
+        });
+      }
+    } else {
+      // If the user is voting for the first time
+      newVoteCount += voteValue;
+      await updateDoc(commentRef, {
+        [`votes.${user.uid}`]: voteType,
+        voteStatus: newVoteCount,
+      });
+    }
+  
+    // Update local state for immediate UI feedback
+    setComments((prev) =>
+      prev.map((item) =>
+        item.id === commentId
+          ? {
+              ...item,
+              votes: {
+                ...item.votes,
+                [user.uid]: hasVoted === voteType ? null : voteType, // Unhighlight or switch
+              },
+              voteStatus: newVoteCount,
+            }
+          : item
+      )
+    );
+  };  
+  
   const getPostComments = async () => {
     if (!selectedPost?.id) {
       console.log("No post ID available");
@@ -191,6 +248,7 @@ const Comments: React.FC<CommentsProps> = ({
       const commentDocs = await getDocs(commentsQuery);
       const comments = commentDocs.docs.map((doc) => ({
         id: doc.id,
+        voteStatus: doc.data()?.voteStatus || 0, // Set a default if not present
         ...doc.data(),
       }));
       setComments(comments as Comment[]);
@@ -256,6 +314,7 @@ const Comments: React.FC<CommentsProps> = ({
                   <CommentItem
                     key={comment.id}
                     comment={comment}
+                    onVote={onVote} // <-- Make sure this is here
                     onDeleteComment={onDeleteComment}
                     onEditComment={onEditComment}
                     loadingDelete={loadingDeleteId === comment.id}
